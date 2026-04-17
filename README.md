@@ -1,4 +1,3 @@
-package.json
 {
   "name": "kif-wallet",
   "version": "1.0.0",
