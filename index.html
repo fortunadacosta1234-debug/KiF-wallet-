@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KiF Wallet</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Segoe UI', sans-serif; background: #0a0a1a; color: #fff; min-height: 100vh; }
+  .hidden { display: none !important; }
+  
+  /* Header */
+  .header { background: linear-gradient(135deg, #e63946, #1d3557); padding: 16px 20px; display: flex; justify-content: space-between; align-items: center; }
+  .logo { font-size: 24px; font-weight: 900; background: linear-gradient(90deg, #fff, #ffd700); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+  .btn-logout { background: rgba(255,255,255,0.2); border: none; color: #fff; padding: 8px 16px; border-radius: 20px; cursor: pointer; font-size: 13px; }
+
+  /* Auth */
+  .auth-container { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; padding: 20px; }
+  .auth-box { background: #1a1a2e; border-radius: 20px; padding: 32px 24px; width: 100%; max-width: 400px; border: 1px solid #2a2a4a; }
+  .auth-box h2 { text-align: center; margin-bottom: 24px; font-size: 22px; }
+  .auth-tabs { display: flex; margin-bottom: 24px; background: #0a0a1a; border-radius: 10px; padding: 4px; }
+  .auth-tab { flex: 1; padding: 10px; text-align: center; border-radius: 8px; cursor: pointer; font-size: 14px; transition: all 0.3s; border: none; background: none; color: #888; }
+  .auth-tab.active { background: linear-gradient(135deg, #e63946, #1d3557); color: #fff; }
+
+  /* Inputs */
+  .input-group { margin-bottom: 16px; }
+  .input-group label { display: block; font-size: 13px; color: #aaa; margin-bottom: 6px; }
+  .input-group input, .input-group select { width: 100%; padding: 12px 16px; background: #0a0a1a; border: 1px solid #2a2a4a; border-radius: 10px; color: #fff; font-size: 15px; outline: none; }
+  .input-group input:focus, .input-group select:focus { border-color: #e63946; }
+
+  /* Buttons */
+  .btn-primary { width: 100%; padding: 14px; background: linear-gradient(135deg, #e63946, #1d3557); border: none; border-radius: 12px; color: #fff; font-size: 16px; font-weight: 700; cursor: pointer; margin-top: 8px; }
+  .btn-secondary { padding: 10px 20px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); border-radius: 10px; color: #fff; font-size: 14px; cursor: pointer; }
+
+  /* Dashboard */
+  .dashboard { padding: 20px; max-width: 500px; margin: 0 auto; }
+  .saldo-card { background: linear-gradient(135deg, #e63946, #1d3557); border-radius: 20px; padding: 28px 24px; margin-bottom: 24px; text-align: center; }
+  .saldo-label { font-size: 13px; opacity: 0.8; margin-bottom: 8px; }
+  .saldo-valor { font-size: 36px; font-weight: 900; }
+  .saldo-nome { font-size: 14px; opacity: 0.8; margin-top: 8px; }
+
+  /* Menu */
+  .menu-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 24px; }
+  .menu-item { background: #1a1a2e; border-radius: 14px; padding: 16px 8px; text-align: center; cursor: pointer; border: 1px solid #2a2a4a; transition: all 0.3s; }
+  .menu-item:active { transform: scale(0.95); }
+  .menu-item.active { border-color: #e63946; background: #2a1a2e; }
+  .menu-icon { font-size: 24px; margin-bottom: 6px; }
+  .menu-label { font-size: 11px; color: #aaa; }
+
+  /* Sections */
+  .section { background: #1a1a2e; border-radius: 16px; padding: 20px; margin-bottom: 16px; border: 1px solid #2a2a4a; }
+  .section h3 { font-size: 16px; margin-bottom: 16px; color: #ffd700; }
+
+  /* Transações */
+  .transacao { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid #2a2a4a; }
+  .transacao:last-child { border-bottom: none; }
+  .trans-info { font-size: 13px; }
+  .trans-desc { color: #ccc; }
+  .trans-data { font-size: 11px; color: #666; margin-top: 2px; }
+  .trans-valor { font-weight: 700; font-size: 15px; }
+  .trans-valor.entrada { color: #4caf50; }
+  .trans-valor.saida { color: #e63946; }
+
+  /* Mensagens */
+  .msg { padding: 12px 16px; border-radius: 10px; margin-bottom: 16px; font-size: 14px; text-align: center; }
+  .msg.sucesso { background: rgba(76,175,80,0.2); color: #4caf50; border: 1px solid #4caf50; }
+  .msg.erro { background: rgba(230,57,70,0.2); color: #e63946; border: 1px solid #e63946; }
+
+  .codigo-afiliado { background: #0a0a1a; border-radius: 10px; padding: 12px; text-align: center; margin-top: 12px; font-size: 13px; color: #ffd700; letter-spacing: 2px; font-weight: 700; }
+</style>
+</head>
+<body>
+
+<!-- AUTH -->
+<div id="authPage" class="auth-container">
+  <div class="auth-box">
+    <div style="text-align:center; margin-bottom:20px;">
+      <span style="font-size:40px; font-weight:900; background:linear-gradient(90deg,#e63946,#ffd700); -webkit-background-clip:text; -webkit-text-fill-color:transparent;">KiF</span>
+      <div style="font-size:13px; color:#888; margin-top:4px;">Carteira Digital Angola</div>
+    </div>
+    <div class="auth-tabs">
+      <button class="auth-tab active" onclick="mostrarTab('login')">Entrar</button>
+      <button class="auth-tab" onclick="mostrarTab('registar')">Registar</button>
+    </div>
+
+    <!-- Login -->
+    <div id="tabLogin">
+      <div id="msgLogin"></div>
+      <div class="input-group"><label>Telefone</label><input type="tel" id="loginTel" placeholder="9XXXXXXXX"></div>
+      <div class="input-group"><label>PIN</label><input type="password" id="loginPin" placeholder="••••" maxlength="6"></div>
+      <button class="btn-primary" onclick="login()">Entrar</button>
+    </div>
+
+    <!-- Registar -->
+    <div id="tabRegistar" class="hidden">
+      <div id="msgRegistar"></div>
+      <div class="input-group"><label>Nome completo</label><input type="text" id="regNome" placeholder="O teu nome"></div>
+      <div class="input-group"><label>Telefone</label><input type="tel" id="regTel" placeholder="9XXXXXXXX"></div>
+      <div class="input-group"><label>PIN (4-6 dígitos)</label><input type="password" id="regPin" placeholder="••••" maxlength="6"></div>
+      <div class="input-group"><label>Código de convite (opcional)</label><input type="text" id="regCodigo" placeholder="KIF-XXXXXX"></div>
+      <button class="btn-primary" onclick="registar()">Criar conta</button>
+    </div>
+  </div>
+</div>
+
+<!-- DASHBOARD -->
+<div id="appPage" class="hidden">
+  <div class="header">
+    <span class="logo">KiF Wallet</span>
+    <button class="btn-logout" onclick="logout()">Sair</button>
+  </div>
+
+  <div class="dashboard">
+    <div class="saldo-card">
+      <div class="saldo-label">Saldo disponível</div>
+      <div class="saldo-valor" id="saldoValor">0 Kz</div>
+      <div class="saldo-nome" id="saldoNome"></div>
+    </div>
+
+    <div class="menu-grid">
+      <div class="menu-item" onclick="mostrarSecao('deposito')"><div class="menu-icon">💰</div><div class="menu-label">Depositar</div></div>
+      <div class="menu-item" onclick="mostrarSecao('levantamento')"><div class="menu-icon">🏧</div><div class="menu-label">Levantar</div></div>
+      <div class="menu-item" onclick="mostrarSecao('transferencia')"><div class="menu-icon">📲</div><div class="menu-label">Transferir</div></div>
+      <div class="menu-item" onclick="mostrarSecao('topup')"><div class="menu-icon">📱</div><div class="menu-label">Top-up</div></div>
+      <div class="menu-item" onclick="mostrarSecao('kixikila')"><div class="menu-icon">🤝</div><div class="menu-label">Kixikila</div></div>
+      <div class="menu-item" onclick="mostrarSecao('agente')"><div class="menu-icon">🏪</div><div class="menu-label">Agente</div></div>
+    </div>
+
+    <!-- Depósito -->
+    <div id="secDeposito" class="section hidden">
+      <h3>💰 Depositar</h3>
+      <div id="msgDeposito"></div>
+      <div class="input-group"><label>Valor (Kz)</label><input type="number" id="depValor" placeholder="Ex: 5000"></div>
+      <button class="btn-primary" onclick="depositar()">Depositar</button>
+    </div>
+
+    <!-- Levantamento -->
+    <div id="secLevantamento" class="section hidden">
+      <h3>🏧 Levantar</h3>
+      <div id="msgLevantamento"></div>
+      <div class="input-group"><label>Valor (Kz)</label><input type="number" id="levValor" placeholder="Ex: 5000"></div>
+      <div class="input-group"><label>PIN</label><input type="password" id="levPin" placeholder="••••" maxlength="6"></div>
+      <button class="btn-primary" onclick="levantar()">Levantar</button>
+    </div>
+
+    <!-- Transferência -->
+    <div id="secTransferencia" class="section hidden">
+      <h3>📲 Transferência P2P</h3>
+      <div id="msgTransferencia"></div>
+      <div class="input-group"><label>Telefone do destinatário</label><input type="tel" id="transTel" placeholder="9XXXXXXXX"></div>
+      <div class="input-group"><label>Valor (Kz)</label><input type="number" id="transValor" placeholder="Ex: 2000"></div>
+      <div class="input-group"><label>PIN</label><input type="password" id="transPin" placeholder="••••" maxlength="6"></div>
+      <button class="btn-primary" onclick="transferir()">Transferir</button>
+    </div>
+
+    <!-- Top-up -->
+    <div id="secTopup" class="section hidden">
+      <h3>📱 Top-up</h3>
+      <div id="msgTopup"></div>
+      <div class="input-group"><label>Operadora</label>
+        <select id="topupOperadora">
+          <option value="Unitel">Unitel</option>
+          <option value="Africell">Africell</option>
+          <option value="Movicel">Movicel</option>
+        </select>
+      </div>
+      <div class="input-group"><label>Telefone a recarregar</label><input type="tel" id="topupTel" placeholder="9XXXXXXXX"></div>
+      <div class="input-group"><label>Valor (Kz)</label><input type="number" id="topupValor" placeholder="Ex: 1000"></div>
+      <div class="input-group"><label>PIN</label><input type="password" id="topupPin" placeholder="••••" maxlength="6"></div>
+      <button class="btn-primary" onclick="topup()">Recarregar</button>
+    </div>
+
+    <!-- Kixikila -->
+    <div id="secKixikila" class="section hidden">
+      <h3>🤝 Kixikila Digital</h3>
+      <div id="msgKixikila"></div>
+      <div style="display:flex; gap:10px; margin-bottom:16px;">
+        <button class="btn-secondary" onclick="mostrarKixikilaCriar()">Criar</button>
+        <button class="btn-secondary" onclick="listarKixikilas()">Ver grupos</button>
+      </div>
+      <div id="kixikilaCriar" class="hidden">
+        <div class="input-group"><label>Nome do grupo</label><input type="text" id="kixNome" placeholder="Ex: Grupo Amigos"></div>
+        <div class="input-group"><label>Valor mensal (Kz)</label><input type="number" id="kixValor" placeholder="Ex: 10000"></div>
+        <div class="input-group"><label>Nº de membros</label><input type="number" id="kixMembros" placeholder="Ex: 5"></div>
+        <button class="btn-primary" onclick="criarKixikila()">Criar Kixikila</button>
+      </div>
+      <div id="kixikilalista"></div>
+    </div>
+
+    <!-- Agente -->
+    <div id="secAgente" class="section hidden">
+      <h3>🏪 Programa de Agentes</h3>
+      <div id="msgAgente"></div>
+      <div id="agenteInfo"></div>
+      <button class="btn-primary" onclick="registarAgente()">Tornar-me Agente</button>
+      <button class="btn-secondary" style="width:100%;margin-top:10px;" onclick="dashboardAgente()">Ver Dashboard</button>
+      <div id="codigoAfiliadoBox" class="codigo-afiliado hidden"></div>
+    </div>
+
+    <!-- Transações -->
+    <div class="section">
+      <h3>📋 Últimas transações</h3>
+      <div id="listaTransacoes"><div style="color:#666; text-align:center; padding:20px;">Carregando...</div></div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // ⚠️ SUBSTITUI ESTE URL PELO TEU URL DO RAILWAY
+  const API_URL = 'https://SEU-PROJETO.up.railway.app';
+
+  let token = localStorage.getItem('kif_token');
+
+  if (token) carregarDashboard();
+
+  function mostrarTab(tab) {
+    document.querySelectorAll('.auth-tab').forEach((t, i) => t.classList.toggle('active', (tab === 'login' && i === 0) || (tab === 'registar' && i === 1)));
+    document.getElementById('tabLogin').classList.toggle('hidden', tab !== 'login');
+    document.getElementById('tabRegistar').classList.toggle('hidden', tab !== 'registar');
+  }
+
+  function mostrarMsg(id, texto, tipo) {
+    const el = document.getElementById(id);
+    el.className = `msg ${tipo}`;
+    el.textContent = texto;
+    el.classList.remove('hidden');
+    setTimeout(() => el.textContent = '', 4000);
+  }
+
+  async function login() {
+    const telefone = document.getElementById('loginTel').value;
+    const pin = document.getElementById('loginPin').value;
+    try {
+      const r = await fetch(`${API_URL}/api/login`, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({telefone, pin}) });
+      const d = await r.json();
+      if (!r.ok) return mostrarMsg('msgLogin', d.erro, 'erro');
+      token = d.token;
+      localStorage.setItem('kif_token', token);
+      carregarDashboard();
+    } catch { mostrarMsg('msgLogin', 'Erro de ligação ao servidor', 'erro'); }
+  }
+
+  async function registar() {
+    const nome = document.getElementById('regNome').value;
+    const telefone = document.getElementById('regTel').value;
+    const pin = document.getElementById('regPin').value;
+    const codigo_afiliado = document.getElementById('regCodigo').value;
+    try {
+      const r = await fetch(`${API_URL}/api/registar`, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({nome, telefone, pin, codigo_afiliado}) });
+      const d = await r.json();
+      if (!r.ok) return mostrarMsg('msgRegistar', d.erro, 'erro');
+      mostrarMsg('msgRegistar', `Conta criada! O teu código: ${d.codigo_afiliado}`, 'sucesso');
+      setTimeout(() => mostrarTab('login'), 2000);
+    } catch { mostrarMsg('msgRegistar', 'Erro de ligação ao servidor', 'erro'); }
+  }
+
+  async function logout() {
+    try { await fetch(`${API_URL}/api/logout`, { method: 'POST', headers: {'Authorization': `Bearer ${token}`} }); } catch {}
+    localStorage.removeItem('kif_token');
+    token = null;
+    document.getElementById('appPage').classList.add('hidden');
+    document.getElementById('authPage').classList.remove('hidden');
+  }
+
+  async function carregarDashboard() {
+    try {
+      const r = await fetch(`${API_URL}/api/dashboard`, { headers: {'Authorization': `Bearer ${token}`} });
+      if (!r.ok) return logout();
+      const d = await r.json();
+      document.getElementById('authPage').classList.add('hidden');
+      document.getElementById('appPage').classList.remove('hidden');
+      document.getElementById('saldoValor').textContent = `${d.saldo.toLocaleString('pt-AO')} Kz`;
+      document.getElementById('saldoNome').textContent = d.nome;
+      renderTransacoes(d.transacoes);
+    } catch { logout(); }
+  }
+
+  function renderTransacoes(lista) {
+    const el = document.getElementById('listaTransacoes');
+    if (!lista || lista.length === 0) { el.innerHTML = '<div style="color:#666;text-align:center;padding:20px;">Sem transações</div>'; return; }
+    el.innerHTML = lista.map(t => {
+      const entrada = ['deposito','transferencia_entrada','bonus_referral'].includes(t.tipo);
+      return `<div class="transacao">
+        <div class="trans-info"><div class="trans-desc">${t.descricao}</div><div class="trans-data">${new Date(t.created_at).toLocaleDateString('pt-AO')}</div></div>
+        <div class="trans-valor ${entrada ? 'entrada' : 'saida'}">${entrada ? '+' : '-'}${t.valor.toLocaleString('pt-AO')} Kz</div>
+      </div>`;
+    }).join('');
+  }
+
+  function mostrarSecao(id) {
+    const secoes = ['secDeposito','secLevantamento','secTransferencia','secTopup','secKixikila','secAgente'];
+    const ids = ['deposito','levantamento','transferencia','topup','kixikila','agente'];
+    secoes.forEach((s, i) => {
+      document.getElementById(s).classList.toggle('hidden', ids[i] !== id);
+    });
+  }
+
+  async function depositar() {
+    const valor = parseFloat(document.getElementById('depValor').value);
+    try {
+      const r = await fetch(`${API_URL}/api/depositar`, { method: 'POST', headers: {'Content-Type':'application/json','Authorization':`Bearer ${token}`}, body: JSON.stringify({valor}) });
+      const d = await r.json();
+      if (!r.ok) return mostrarMsg('msgDeposito', d.erro, 'erro');
+      mostrarMsg('msgDeposito', d.mensagem, 'sucesso');
+      document.getElementById('saldoValor').textContent = `${d.saldo.toLocaleString('pt-AO')} Kz`;
+      carregarDashboard();
+    } catch { mostrarMsg('msgDeposito', 'Erro de ligação', 'erro'); }
+  }
+
+  async function levantar() {
+    const valor = parseFloat(document.getElementById('levValor').value);
+    const pin = document.getElementById('levPin').value;
+    try {
+      const r = await fetch(`${API_URL}/api/levantar`, { method: 'POST', headers: {'Content-Type':'application/json','Authorization':`Bearer ${token}`}, body: JSON.stringify({valor, pin}) });
+      const d = await r.json();
+      if (!r.ok) return mostrarMsg('msgLevantamento', d.erro, 'erro');
+      mostrarMsg('msgLevantamento', d.mensagem, 'sucesso');
+      carregarDashboard();
+    } catch { mostrarMsg('msgLevantamento', 'Erro de ligação', 'erro'); }
+  }
+
+  async function transferir() {
+    const telefone_destino = document.getElementById('transTel').value;
+    const valor = parseFloat(document.getElementById('transValor').value);
+    const pin = document.getElementById('transPin').value;
+    try {
+      const r = await fetch(`${API_URL}/api/transferir`, { method: 'POST', headers: {'Content-Type':'application/json','Authorization':`Bearer ${token}`}, body: JSON.stringify({telefone_destino, valor, pin}) });
+      const d = await r.json();
+      if (!r.ok) return mostrarMsg('msgTransferencia', d.erro, 'erro');
+      mostrarMsg('msgTransferencia', d.mensagem, 'sucesso');
+      carregarDashboard();
+    } catch { mostrarMsg('msgTransferencia', 'Erro de ligação', 'erro'); }
+  }
+
+  async function topup() {
+    const operadora = document.getElementById('topupOperadora').value;
+    const telefone = document.getElementById('topupTel').value;
+    const valor = parseFloat(document.getElementById('topupValor').value);
+    const pin = document.getElementById('topupPin').value;
+    try {
+      const r = await fetch(`${API_URL}/api/topup`, { method: 'POST', headers: {'Content-Type':'application/json','Authorization':`Bearer ${token}`}, body: JSON.stringify({operadora, telefone, valor, pin}) });
+      const d = await r.json();
+      if (!r.ok) return mostrarMsg('msgTopup', d.erro, 'erro');
+      mostrarMsg('msgTopup', d.mensagem, 'sucesso');
+      carregarDashboard();
+    } catch { mostrarMsg('msgTopup', 'Erro de ligação', 'erro'); }
+  }
+
+  function mostrarKixikilaCriar() {
+    document.getElementById('kixikilaCriar').classList.toggle('hidden');
+  }
+
+  async function criarKixikila() {
+    const nome = document.getElementById('kixNome').value;
+    const valor_mensal = parseFloat(document.getElementById('kixValor').value);
+    const total_membros = parseInt(document.getElementById('kixMembros').value);
+    try {
+      const r = await fetch(`${API_URL}/api/kixikila/criar`, { method: 'POST', headers: {'Content-Type':'application/json','Authorization':`Bearer ${token}`}, body: JSON.stringify({nome, valor_mensal, total_membros}) });
+      const d = await r.json();
+      if (!r.ok) return mostrarMsg('msgKixikila', d.erro, 'erro');
+      mostrarMsg('msgKixikila', d.mensagem, 'sucesso');
+    } catch { mostrarMsg('msgKixikila', 'Erro de ligação', 'erro'); }
+  }
+
+  async function listarKixikilas() {
+    try {
+      const r = await fetch(`${API_URL}/api/kixikila/listar`, { headers: {'Authorization':`Bearer ${token}`} });
+      const lista = await r.json();
+      const el = document.getElementById('kixikilalista');
+      if (!lista.length) { el.innerHTML = '<div style="color:#666;text-align:center;padding:16px;">Sem Kixikilas abertas</div>'; return; }
+      el.innerHTML = lista.map(k => `
+        <div style="background:#0a0a1a;border-radius:10px;padding:12px;margin-
